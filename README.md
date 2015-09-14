@@ -8,9 +8,12 @@ any line starting with `|` as first non-whitespace is considered part
 of a table.  Horizontal lines `|----+---|` are ignored.  Only the
 first table in a file is read.
 
+This reads an org-table (in `test/testtable2.org`) into a
+`Matrix{Float64}` replacing empty strings with `NaN`s:
+
 ```julia
 using OrgTables
-r,h=readorg("testtable2.org", Float64, NaN)
+data,header = readorg("testtable2.org", Float64, NaN)
 ```
 
 TODO:
