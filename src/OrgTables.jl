@@ -19,13 +19,14 @@ Input:
 Kwargs:
 
 - HeaderT: eltype of header
+- drop: a list of column numbers to drop
 
 
 Returns:
 
 - (data_cells, header_cells) 
 """
-function readorg(source, T::Type=UTF8String, fillval=""; HeaderT::Type=UTF8String)
+function readorg(source, T::Type=UTF8String, fillval=""; HeaderT::Type=UTF8String, drop=Int[])
     fillval = convert(T,fillval)
 
     table_line = r"^\s*\|.*\|.*$"
@@ -35,6 +36,7 @@ function readorg(source, T::Type=UTF8String, fillval=""; HeaderT::Type=UTF8Strin
     rowlength = -1
     out = T[]
     look4header = true
+    keep = Int[] # which columns to keep
     open(source) do fl
         while !eof(fl)
             st = readline(fl)
@@ -46,7 +48,13 @@ function readorg(source, T::Type=UTF8String, fillval=""; HeaderT::Type=UTF8Strin
                 end
                 fields = split(sst, '|')[2:end-1]
                 nl += 1
-                if nl==1 # this could be the header
+                if nl==1 # this could be the header and some other initialization
+                    rowlength = length(fields)
+                    # which columns to drop:
+                    tmp = trues(rowlength)
+                    tmp[drop] = false
+                    keep = (1:rowlength)[tmp]
+                    fields = fields[keep]
                     rowlength = length(fields)
                     if !eof(fl)
                         pos = position(fl)
@@ -61,8 +69,11 @@ function readorg(source, T::Type=UTF8String, fillval=""; HeaderT::Type=UTF8Strin
                                 seek(fl, pos) # put file pointer back to where it was
                             end
                         end
-                    end                        
+                    end
+                else
+                    fields = fields[keep]
                 end
+
                 if length(fields)!=rowlength
                     error("Row number $nl has length $(length(fields)) instead of $rowlength")
                 end

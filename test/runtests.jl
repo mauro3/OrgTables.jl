@@ -13,3 +13,7 @@ r,h=readorg("testtable2.org", Float64, NaN)
 @test h==UTF8String["X","Y","r-dists contour","f","dB","bed ele","bmax","Surf  DEM"]
 @test typeof(r)==Matrix{Float64}
 @test all([x[1]===x[2] for x in zip(r[1,:],[624479.0  232874.0    1.0  NaN    NaN     376.0   NaN    434.0])])
+
+r,h=readorg("testtable1.org", Float64, NaN, drop=[3,6,11])
+@test h==UTF8String["X","Y","r-dists contour","f","dB","bed ele","bmax","Surf DEM"]
+@test typeof(r)==Matrix{Float64}
