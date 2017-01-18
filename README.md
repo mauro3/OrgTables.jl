@@ -16,6 +16,14 @@ using OrgTables
 data,header = readorg("testtable2.org", Float64, NaN)
 ```
 
+It works with FileIO.jl, but needs to be loaded explicitly (not
+registered with FileIO.jl):
+```julia
+using OrgTables, FileIO
+data,header = load("testtable2.org", T=Float64, fillval=NaN)
+```
+
+
 TODO:
 
 - support several tables in one file
