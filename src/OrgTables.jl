@@ -13,7 +13,7 @@ treated as a header.
 Input:
 
 - source: source file or IO stream
-- T: eltype of array (default UTF8String)
+- T: eltype of array (default String)
 - fillval: what to replace an empty string with.  Needs to be convertible to T
 
 Kwargs:
@@ -24,9 +24,9 @@ Kwargs:
 
 Returns:
 
-- (data_cells, header_cells) 
+- (data_cells, header_cells)
 """
-function readorg(source, T::Type=UTF8String, fillval=""; HeaderT::Type=UTF8String, drop=Int[])
+function readorg(source, T::Type=String, fillval=""; HeaderT::Type=String, drop=Int[])
     fillval = convert(T,fillval)
 
     table_line = r"^\s*\|.*\|.*$"
@@ -62,7 +62,7 @@ function readorg(source, T::Type=UTF8String, fillval=""; HeaderT::Type=UTF8Strin
                         if ismatch(table_line, st2) # read the next line
                             tmp = strip(match(table_line, st2).match)
                             if tmp[2]=='-'
-                                append!(header, map(x->convert(UTF8String, strip(x)), fields))
+                                append!(header, map(x->convert(String, strip(x)), fields))
                                 hasheader = 1
                                 continue
                             else
@@ -79,17 +79,19 @@ function readorg(source, T::Type=UTF8String, fillval=""; HeaderT::Type=UTF8Strin
                 end
                 append!(out, map(x->parse_convert(T, strip(x), fillval), fields))
             elseif nl>0 # first table is finished, ignore rest of file
-                return nothing 
+                return nothing
             end
         end
         return nothing
     end
-    
+
     if nl==0
         error("No org-mode table found!")
     end
 
-    return reshape(out, div(length(out),nl-hasheader), nl-hasheader)', header
+    out = reshape(out, div(length(out),nl-hasheader), nl-hasheader)
+    out = permutedims(out, [2, 1]) # transpose
+    return out, header
 end
 
 parse_convert{T<:Number}(::Type{T}, x, fillval) =  x=="" ? fillval : parse(T, x)
