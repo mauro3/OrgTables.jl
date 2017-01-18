@@ -1,4 +1,5 @@
 module OrgTables
+import FileIO
 
 # package code goes here
 export readorg, writeorg
@@ -100,7 +101,19 @@ parse_convert{T}(::Type{T}, x, fillval) =  x=="" ? fillval : convert(T, x)
 
 
 function writeorg(file, data, header=nothing)
-    error("not implemented")
+    error("not implemented") # update also FileIO.jl below
+end
+
+# FileIO.jl interop
+orgformat = FileIO.@format_str("ORG-MODE")
+FileIO.add_format(orgformat, (), ".org", [:OrgTables, FileIO.LOAD])
+
+function FileIO.load(f::FileIO.File{orgformat};
+                     T=String,
+                     fillval="",
+                     HeaderT=String,
+                     drop=Int[])
+    readorg(f.filename, T, fillval; HeaderT=HeaderT, drop=drop)
 end
 
 end # module
