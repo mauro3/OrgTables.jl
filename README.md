@@ -1,6 +1,7 @@
 # OrgTables
 
 [![Build Status](https://travis-ci.org/mauro3/OrgTables.jl.svg?branch=master)](https://travis-ci.org/mauro3/OrgTables.jl)
+[![Build status](https://ci.appveyor.com/api/projects/status/eb1uam230dreew0r?svg=true)](https://ci.appveyor.com/project/mauro3/orgtables-jl)
 
 A Julia package to read emacs
 [org-mode tables](http://orgmode.org/guide/Tables.html).  Essentially,
