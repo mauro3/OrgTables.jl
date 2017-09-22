@@ -2,7 +2,9 @@ module OrgTables
 import FileIO
 
 # package code goes here
-export readorg, writeorg
+
+parse_convert{T<:Number}(::Type{T}, x, fillval) =  x=="" ? fillval : parse(T, x)
+parse_convert{T}(::Type{T}, x, fillval) =  x=="" ? fillval : convert(T, x)
 
 """
 
@@ -14,6 +16,7 @@ treated as a header.
 Input:
 
 - source: source file or IO stream
+- tablenr: which table to read (default first ==1)
 - T: eltype of array (default String)
 - fillval: what to replace an empty string with.  Needs to be convertible to T
 
@@ -27,7 +30,16 @@ Returns:
 
 - (data_cells, header_cells)
 """
-function readorg(source, T::Type=String, fillval=""; HeaderT::Type=String, drop=Int[])
+orgformat = FileIO.@format_str("ORG-MODE")
+FileIO.add_format(orgformat, (), ".org", [:OrgTables, FileIO.LOAD])
+
+function FileIO.load(f::FileIO.File{orgformat};
+                     T=String,
+                     fillval="",
+                     tablenr=1,
+                     HeaderT=String,
+                     drop=Int[])
+    source = f.filename
     fillval = convert(T,fillval)
 
     table_line = r"^\s*\|.*\|.*$"
@@ -38,10 +50,21 @@ function readorg(source, T::Type=String, fillval=""; HeaderT::Type=String, drop=
     out = T[]
     look4header = true
     keep = Int[] # which columns to keep
+    cur_tablenr = 0
+    intable = false
     open(source) do fl
         while !eof(fl)
             st = readline(fl)
             if ismatch(table_line, st)
+                if intable==false
+                    # first line of a new table
+                    intable=true
+                    cur_tablenr += 1
+                end
+                if cur_tablenr!=tablenr
+                    # not the table we want to read
+                    continue
+                end
                 m = match(table_line, st)
                 sst = strip(m.match)
                 if sst[2]=='-' # a hline
@@ -79,41 +102,25 @@ function readorg(source, T::Type=String, fillval=""; HeaderT::Type=String, drop=
                     error("Row number $nl has length $(length(fields)) instead of $rowlength")
                 end
                 append!(out, map(x->parse_convert(T, strip(x), fillval), fields))
-            elseif nl>0 # first table is finished, ignore rest of file
-                return nothing
+            elseif intable
+                # reached the end of a table
+                intable = false
+                if cur_tablenr==tablenr
+                    # just read the table which was to read
+                    break
+                end
             end
         end
-        return nothing
     end
 
-    if nl==0
-        error("No org-mode table found!")
+    if cur_tablenr<tablenr
+        error("No $tablenr-th org-mode table found!")
     end
 
     out = reshape(out, div(length(out),nl-hasheader), nl-hasheader)
     out = permutedims(out, [2, 1]) # transpose
     return out, header
-end
 
-parse_convert{T<:Number}(::Type{T}, x, fillval) =  x=="" ? fillval : parse(T, x)
-parse_convert{T}(::Type{T}, x, fillval) =  x=="" ? fillval : convert(T, x)
-
-
-
-function writeorg(file, data, header=nothing)
-    error("not implemented") # update also FileIO.jl below
-end
-
-# FileIO.jl interop
-orgformat = FileIO.@format_str("ORG-MODE")
-FileIO.add_format(orgformat, (), ".org", [:OrgTables, FileIO.LOAD])
-
-function FileIO.load(f::FileIO.File{orgformat};
-                     T=String,
-                     fillval="",
-                     HeaderT=String,
-                     drop=Int[])
-    readorg(f.filename, T, fillval; HeaderT=HeaderT, drop=drop)
 end
 
 end # module
